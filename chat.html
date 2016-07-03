@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SmartCommand Client</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="style1.css" rel="stylesheet">
+    <script type="text/javascript" src="prototype.js"></script>
+
+    <script type="text/javascript">
+        //when the dom is fully loaded
+        document.observe("dom:loaded", function() {
+//            (function typecheck() {
+//                  var a = "a";    //string
+//                  var b = !a;     //boolean
+//                  var c = !!a;    //boolean
+//
+//              alert("var a = " + typeof(a) + "\n" +
+//                    "var b = " + typeof(b) + "\n" +
+//                    "var c = " + typeof(c));
+//            })();
+            //each log gets 'timestamped' and tacked onto the front of current log
+            function log(text) {
+                var blitzcon = new Date().toString().substr(0, 24);//$("log").innerHTML =(new Date).getTime()
+                $("log").innerHTML = blitzcon + ": " + (!Object.isUndefined(text) && text !== null ? text.escapeHTML() : "null") + $("log").innerHTML;
+            }
+            //show user that websocket is not supported
+            if (!window.WebSocket) {
+                alert("FATAL: WebSocket not natively supported!");
+            }
+            //declare a new variable for 'websocket'
+            var ws;
+
+            $("uriForm").observe("submit", function(e) {
+                e.stop();
+                //open a new websocket
+                ws = new WebSocket($F("uri"));
+                ws.onopen = function() {
+//                    log("[WebSocket#onopen]\n");
+                    log("[onopen]\n");
+                }
+                //when a message comes in, prepend w/'Message' and log it plus a linefeed to console
+                ws.onmessage = function(e) {
+//                    log("[WebSocket#onmessage] Message: '" + e.data + "'\n");
+                    log("Message: '" + e.data + "'\n");
+
+                }
+                ws.onclose = function() {
+//                    log("[WebSocket#onclose]\n");
+                    log("[WebSocket#onclose]\n");
+                    $("uri", "connect").invoke("enable");
+                    $("disconnect").disable();
+                    ws = null;
+                }
+                $("uri", "connect").invoke("disable");
+                $("disconnect").enable();
+            });
+
+            $("sendForm").observe("submit", function(e) {
+                e.stop();
+                if (ws) {
+                    var textField = $("textField");
+                    ws.send(textField.value);
+                    log("   Send: '" + textField.value + "'\n");
+
+//                    log("[WebSocket#send]      Send:    '" + textField.value + "'\n");
+//                    textField.value = ""; this would erase text after 'Send' button pressed
+                    textField.focus();
+                }
+            });
+
+            $("disconnect").observe("click", function(e) {
+                e.stop();
+                if (ws) {
+                    ws.close();
+                    ws = null;
+                }
+            });
+        });
+    </script>
+  </head>
+  <body>
+<!--
+      <form id="uriForm"><input type="text" id="uri"
+                                value="ws://192.168.2.32:8887" style="width:200px;"> <input type="submit" id="connect" value="Connect"><input type="button" id="disconnect" value="Disconnect" disabled="disabled"></form><br>
+-->
+      <form id="uriForm">
+          <input type="text"   id="uri"value="ws://localhost:8887" style="width:200px;"> 
+          <input type="submit" id="connect"    value="Connect">
+          <input type="button" id="disconnect" value="Disconnect" disabled="disabled">
+          <div class="content" id="a1"></div>
+          <div class="content" id="a2"></div>
+          <div class="content" id="a3"></div>
+      </form><br>
+      <form id="sendForm"><input type="text" id="textField" value="" style="width:200px;"> <input type="submit" value="Send"></form>
+      <br>
+      
+      <form><textarea id="log" rows="30" cols="100" style="font-family:monospace; color:red;"></textarea></form><br>
+      
+      <footer>
+          Copyright © SmartCommand.com
+      </footer>
+  </body>
+</html>
